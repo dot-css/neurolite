@@ -1,0 +1,1 @@
+"""Core module containing data models and base classes."""
