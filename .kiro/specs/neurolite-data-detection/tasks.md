@@ -186,8 +186,11 @@
     - Write unit tests for deep learning model suggestions
     - _Requirements: 9.2_
 
-- [ ] 9. Build PreprocessingRecommender for data preparation
-  - [ ] 9.1 Implement preprocessing pipeline recommendations
+- [-] 9. Build PreprocessingRecommender for data preparation
+
+
+  - [-] 9.1 Implement preprocessing pipeline recommendations
+
     - Create normalization and standardization need detection
     - Add encoding requirement identification algorithms
     - Implement feature scaling necessity assessment

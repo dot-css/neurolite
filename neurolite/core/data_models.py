@@ -335,6 +335,80 @@ class TimeSeriesAnalysis:
             raise ValueError("Seasonality period must be positive")
 
 
+# Preprocessing recommendation data models
+
+@dataclass
+class ScalingRecommendation:
+    """Recommendation for feature scaling strategies."""
+    scaling_type: Literal['standardization', 'normalization', 'robust_scaling', 'none']
+    rationale: str
+    confidence: float
+    affected_columns: List[str] = field(default_factory=list)
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate ScalingRecommendation data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.rationale:
+            raise ValueError("Rationale cannot be empty")
+
+
+@dataclass
+class EncodingRecommendation:
+    """Recommendation for categorical encoding strategies."""
+    encoding_type: Literal['one_hot', 'label_encoding', 'target_encoding', 'binary_encoding', 'none']
+    rationale: str
+    confidence: float
+    affected_columns: List[str] = field(default_factory=list)
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate EncodingRecommendation data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.rationale:
+            raise ValueError("Rationale cannot be empty")
+
+
+@dataclass
+class FeatureEngineeringRecommendation:
+    """Recommendation for feature engineering strategies."""
+    technique: str
+    rationale: str
+    confidence: float
+    affected_columns: List[str] = field(default_factory=list)
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    expected_benefit: str = ""
+    
+    def __post_init__(self):
+        """Validate FeatureEngineeringRecommendation data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.rationale:
+            raise ValueError("Rationale cannot be empty")
+        if not self.technique:
+            raise ValueError("Technique cannot be empty")
+
+
+@dataclass
+class PreprocessingPipeline:
+    """Complete preprocessing pipeline recommendation."""
+    scaling_recommendations: List[ScalingRecommendation] = field(default_factory=list)
+    encoding_recommendations: List[EncodingRecommendation] = field(default_factory=list)
+    feature_engineering_recommendations: List[FeatureEngineeringRecommendation] = field(default_factory=list)
+    pipeline_order: List[str] = field(default_factory=list)
+    overall_confidence: float = 0.0
+    estimated_processing_time: float = 0.0
+    
+    def __post_init__(self):
+        """Validate PreprocessingPipeline data after initialization."""
+        if not 0.0 <= self.overall_confidence <= 1.0:
+            raise ValueError("Overall confidence must be between 0.0 and 1.0")
+        if self.estimated_processing_time < 0:
+            raise ValueError("Estimated processing time cannot be negative")
+
+
 # Task detection specific data models
 
 @dataclass
