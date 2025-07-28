@@ -26,6 +26,10 @@ from .detectors import (
     QualityDetector
 )
 
+from .analyzers import (
+    StatisticalAnalyzer
+)
+
 # Simple DataProfiler class for easy usage
 class DataProfiler:
     """
@@ -46,6 +50,7 @@ class DataProfiler:
         self.file_detector = FileDetector()
         self.type_detector = DataTypeDetector()
         self.quality_detector = QualityDetector(confidence_threshold=confidence_threshold)
+        self.statistical_analyzer = StatisticalAnalyzer(confidence_level=0.95)
     
     def analyze(self, data_source, quick: bool = False):
         """
@@ -91,6 +96,10 @@ class DataProfiler:
             # Missing data analysis
             missing_analysis = self.quality_detector.detect_missing_patterns(df)
             results['missing_analysis'] = missing_analysis
+            
+            # Statistical analysis
+            statistical_properties = self.statistical_analyzer.analyze_comprehensive(df)
+            results['statistical_properties'] = statistical_properties
         
         return results
 
@@ -108,6 +117,7 @@ __all__ = [
     "FileDetector",
     "DataTypeDetector",
     "QualityDetector",
+    "StatisticalAnalyzer",
     "NeuroLiteException",
     "UnsupportedFormatError",
     "InsufficientDataError",
