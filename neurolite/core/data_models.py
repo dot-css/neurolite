@@ -275,3 +275,101 @@ class MissingDataAnalysis:
             raise ValueError("Missing percentage must be between 0.0 and 1.0")
         if not self.imputation_strategy:
             raise ValueError("Imputation strategy cannot be empty")
+
+
+# Domain-specific analysis data models
+
+@dataclass
+class CVTaskAnalysis:
+    """Analysis results for computer vision tasks."""
+    task_type: Literal['classification', 'object_detection', 'segmentation', 'unknown']
+    task_subtype: str
+    confidence: float
+    num_classes: Optional[int] = None
+    annotation_format: Optional[str] = None
+    image_characteristics: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate CVTaskAnalysis data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if self.num_classes is not None and self.num_classes < 1:
+            raise ValueError("Number of classes must be positive")
+
+
+@dataclass
+class NLPTaskAnalysis:
+    """Analysis results for NLP tasks."""
+    task_type: Literal['sentiment', 'classification', 'ner', 'qa', 'conversation', 'unknown']
+    task_subtype: str
+    confidence: float
+    text_characteristics: Dict[str, Any] = field(default_factory=dict)
+    sequence_info: Optional[Dict[str, Any]] = None
+    
+    def __post_init__(self):
+        """Validate NLPTaskAnalysis data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+
+
+@dataclass
+class TimeSeriesAnalysis:
+    """Analysis results for time series data."""
+    series_type: Literal['univariate', 'multivariate']
+    has_trend: bool
+    has_seasonality: bool
+    is_stationary: bool
+    frequency: Optional[str]
+    seasonality_period: Optional[int] = None
+    trend_strength: Optional[float] = None
+    seasonal_strength: Optional[float] = None
+    recommended_task: Literal['forecasting', 'classification', 'anomaly_detection'] = 'forecasting'
+    
+    def __post_init__(self):
+        """Validate TimeSeriesAnalysis data after initialization."""
+        if self.trend_strength is not None and not 0.0 <= self.trend_strength <= 1.0:
+            raise ValueError("Trend strength must be between 0.0 and 1.0")
+        if self.seasonal_strength is not None and not 0.0 <= self.seasonal_strength <= 1.0:
+            raise ValueError("Seasonal strength must be between 0.0 and 1.0")
+        if self.seasonality_period is not None and self.seasonality_period < 1:
+            raise ValueError("Seasonality period must be positive")
+
+
+# Task detection specific data models
+
+@dataclass
+class SupervisedTaskAnalysis:
+    """Analysis results for supervised learning tasks."""
+    task_type: Literal['classification', 'regression']
+    task_subtype: str  # 'binary', 'multiclass', 'linear', 'non_linear'
+    confidence: float
+    target_characteristics: Dict[str, Any] = field(default_factory=dict)
+    dataset_balance: Dict[str, Any] = field(default_factory=dict)
+    complexity_indicators: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate SupervisedTaskAnalysis data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.task_subtype:
+            raise ValueError("Task subtype cannot be empty")
+
+
+@dataclass
+class UnsupervisedTaskAnalysis:
+    """Analysis results for unsupervised learning tasks."""
+    clustering_potential: float
+    optimal_clusters: Optional[int]
+    dimensionality_reduction_needed: bool
+    confidence: float
+    clustering_characteristics: Dict[str, Any] = field(default_factory=dict)
+    dimensionality_info: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate UnsupervisedTaskAnalysis data after initialization."""
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not 0.0 <= self.clustering_potential <= 1.0:
+            raise ValueError("Clustering potential must be between 0.0 and 1.0")
+        if self.optimal_clusters is not None and self.optimal_clusters < 2:
+            raise ValueError("Optimal clusters must be at least 2")
