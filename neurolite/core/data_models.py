@@ -447,3 +447,98 @@ class UnsupervisedTaskAnalysis:
             raise ValueError("Clustering potential must be between 0.0 and 1.0")
         if self.optimal_clusters is not None and self.optimal_clusters < 2:
             raise ValueError("Optimal clusters must be at least 2")
+
+
+# Complexity analysis data models
+
+@dataclass
+class ResourceEstimate:
+    """Computational resource requirement estimates."""
+    cpu_suitability: float  # 0-1 score for CPU processing suitability
+    gpu_suitability: float  # 0-1 score for GPU processing suitability
+    memory_requirement_mb: float  # Estimated memory requirement in MB
+    processing_time_seconds: float  # Estimated processing time in seconds
+    recommended_hardware: Literal['cpu', 'gpu', 'distributed']
+    confidence: float
+    rationale: str
+    scaling_factors: Dict[str, float] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate ResourceEstimate data after initialization."""
+        if not 0.0 <= self.cpu_suitability <= 1.0:
+            raise ValueError("CPU suitability must be between 0.0 and 1.0")
+        if not 0.0 <= self.gpu_suitability <= 1.0:
+            raise ValueError("GPU suitability must be between 0.0 and 1.0")
+        if self.memory_requirement_mb < 0:
+            raise ValueError("Memory requirement cannot be negative")
+        if self.processing_time_seconds < 0:
+            raise ValueError("Processing time cannot be negative")
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.rationale:
+            raise ValueError("Rationale cannot be empty")
+
+
+@dataclass
+class OverfittingRisk:
+    """Overfitting risk assessment results."""
+    risk_level: Literal['low', 'medium', 'high']
+    risk_score: float  # 0-1 score where 1 is highest risk
+    contributing_factors: List[str]
+    regularization_recommendations: List[str]
+    cross_validation_strategy: str
+    confidence: float
+    mitigation_strategies: Dict[str, str] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate OverfittingRisk data after initialization."""
+        if not 0.0 <= self.risk_score <= 1.0:
+            raise ValueError("Risk score must be between 0.0 and 1.0")
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        if not self.cross_validation_strategy:
+            raise ValueError("Cross validation strategy cannot be empty")
+
+
+@dataclass
+class DatasetComplexity:
+    """Dataset complexity assessment results."""
+    complexity_level: Literal['low', 'medium', 'high']
+    complexity_score: float  # 0-1 score where 1 is most complex
+    dimensionality_complexity: float  # Curse of dimensionality factor
+    sample_complexity: float  # Sample size vs feature ratio
+    class_imbalance_complexity: float  # Class distribution complexity
+    feature_interaction_complexity: float  # Feature interaction complexity
+    noise_level: float  # Estimated noise in the data
+    confidence: float
+    complexity_factors: Dict[str, float] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Validate DatasetComplexity data after initialization."""
+        complexity_metrics = [
+            self.complexity_score, self.dimensionality_complexity,
+            self.sample_complexity, self.class_imbalance_complexity,
+            self.feature_interaction_complexity, self.noise_level, self.confidence
+        ]
+        for metric in complexity_metrics:
+            if not 0.0 <= metric <= 1.0:
+                raise ValueError("All complexity metrics must be between 0.0 and 1.0")
+
+
+@dataclass
+class ComplexityAnalysis:
+    """Comprehensive complexity analysis results."""
+    dataset_complexity: DatasetComplexity
+    resource_estimate: ResourceEstimate
+    overfitting_risk: OverfittingRisk
+    recommended_approach: str
+    performance_expectations: Dict[str, str]
+    optimization_suggestions: List[str]
+    overall_confidence: float
+    
+    def __post_init__(self):
+        """Validate ComplexityAnalysis data after initialization."""
+        if not 0.0 <= self.overall_confidence <= 1.0:
+            raise ValueError("Overall confidence must be between 0.0 and 1.0")
+        if not self.recommended_approach:
+            raise ValueError("Recommended approach cannot be empty")

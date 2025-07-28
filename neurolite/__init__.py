@@ -27,7 +27,8 @@ from .detectors import (
 )
 
 from .analyzers import (
-    StatisticalAnalyzer
+    StatisticalAnalyzer,
+    ComplexityAnalyzer
 )
 
 # Simple DataProfiler class for easy usage
@@ -118,6 +119,7 @@ __all__ = [
     "DataTypeDetector",
     "QualityDetector",
     "StatisticalAnalyzer",
+    "ComplexityAnalyzer",
     "NeuroLiteException",
     "UnsupportedFormatError",
     "InsufficientDataError",

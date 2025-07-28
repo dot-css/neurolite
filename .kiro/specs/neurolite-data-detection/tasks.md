@@ -196,22 +196,31 @@
     - Write unit tests for preprocessing recommendations
     - _Requirements: 9.3_
 
-- [ ] 10. Create ComplexityAnalyzer for performance estimation
-  - [ ] 10.1 Implement computational requirement estimation
+- [x] 10. Create ComplexityAnalyzer for performance estimation
+
+
+
+  - [x] 10.1 Implement computational requirement estimation
+
     - Create CPU vs GPU suitability assessment algorithms
     - Add memory requirement prediction logic
     - Implement processing time estimation functions
     - Write unit tests for resource requirement accuracy
     - _Requirements: 10.1, 10.2_
 
-  - [ ] 10.2 Implement model complexity assessment
+  - [x] 10.2 Implement model complexity assessment
+
+
     - Code overfitting risk detection algorithms
     - Add regularization requirement identification
     - Create cross-validation strategy recommendation logic
     - Write unit tests for complexity assessment accuracy
     - _Requirements: 10.3, 10.4_
 
-- [ ] 11. Build central DataProfiler orchestrator
+
+- [-] 11. Build central DataProfiler orchestrator
+
+
   - [ ] 11.1 Implement core analysis pipeline
     - Create main analyze() method that coordinates all detectors and analyzers
     - Add error handling and graceful degradation logic
