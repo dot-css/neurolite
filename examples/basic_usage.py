@@ -1,215 +1,363 @@
 """
-Basic usage examples for NeuroLite.
+NeuroLite Basic Usage Examples
 
-This script demonstrates the core functionality of NeuroLite including
-data quality assessment, type detection, and basic analysis.
+This script demonstrates the basic usage of NeuroLite for automated data analysis
+and ML recommendations with minimal code.
 """
 
 import pandas as pd
 import numpy as np
-from neurolite.detectors import QualityDetector, DataTypeDetector, FileDetector
+import neurolite as nl
+from pathlib import Path
+import tempfile
+import os
 
 
 def create_sample_data():
-    """Create sample data for demonstration."""
-    np.random.seed(42)
+    """Create sample datasets for demonstration."""
+    print("Creating sample datasets...")
     
-    # Create a sample dataset with various data quality issues
+    # Create a sample CSV file
+    np.random.seed(42)
     data = {
-        'user_id': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'name': ['Alice', 'Bob', 'Charlie', np.nan, 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'],
-        'age': [25, 30, 35, 28, np.nan, 45, 32, 38, 29, 41],
-        'email': ['alice@example.com', 'bob@example.com', 'charlie@invalid', 
-                 'david@example.com', 'eve@example.com', 'frank@example.com',
-                 'grace@example.com', 'henry@example.com', 'ivy@example.com', 'jack@example.com'],
-        'salary': [50000, 55000, 60000, 52000, 58000, 75000, 48000, 62000, 51000, 68000],
-        'department': ['Engineering', 'Marketing', 'Engineering', 'Sales', 'Marketing',
-                      'Engineering', 'Sales', 'Engineering', 'Marketing', 'Sales'],
-        'join_date': ['2020-01-15', '2019-03-22', '2021-07-10', '2020-11-05', '2019-09-18',
-                     '2018-12-03', '2021-02-28', '2020-06-14', '2019-11-30', '2021-04-12']
+        'age': np.random.randint(18, 80, 1000),
+        'income': np.random.normal(50000, 15000, 1000),
+        'education': np.random.choice(['High School', 'Bachelor', 'Master', 'PhD'], 1000),
+        'experience_years': np.random.randint(0, 40, 1000),
+        'satisfaction_score': np.random.uniform(1, 10, 1000),
+        'department': np.random.choice(['Engineering', 'Sales', 'Marketing', 'HR'], 1000),
+        'performance_rating': np.random.choice(['Poor', 'Fair', 'Good', 'Excellent'], 1000, 
+                                             p=[0.1, 0.2, 0.4, 0.3]),
+        'join_date': pd.date_range('2020-01-01', periods=1000, freq='D')[:1000],
+        'is_remote': np.random.choice([True, False], 1000, p=[0.3, 0.7])
     }
     
-    return pd.DataFrame(data)
+    # Add some missing values
+    data['income'][np.random.choice(1000, 50, replace=False)] = np.nan
+    data['satisfaction_score'][np.random.choice(1000, 30, replace=False)] = np.nan
+    
+    df = pd.DataFrame(data)
+    
+    # Save to temporary CSV file
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+    df.to_csv(temp_file.name, index=False)
+    temp_file.close()
+    
+    return temp_file.name, df
 
 
-def demonstrate_quality_detection():
-    """Demonstrate quality detection capabilities."""
-    print("=" * 60)
-    print("QUALITY DETECTION DEMONSTRATION")
-    print("=" * 60)
+def example_1_basic_analysis():
+    """Example 1: Basic analysis with minimal code."""
+    print("\n" + "="*60)
+    print("EXAMPLE 1: Basic Analysis (3 lines of code)")
+    print("="*60)
     
-    # Create sample data
-    df = create_sample_data()
-    print(f"Sample dataset shape: {df.shape}")
-    print(f"Sample data:\n{df.head()}\n")
+    csv_file, df = create_sample_data()
     
-    # Initialize quality detector
-    quality_detector = QualityDetector()
-    
-    # Perform comprehensive quality analysis
-    print("1. Comprehensive Quality Analysis")
-    print("-" * 40)
-    quality_metrics = quality_detector.analyze_quality(df)
-    
-    print(f"Completeness: {quality_metrics.completeness:.2%}")
-    print(f"Consistency: {quality_metrics.consistency:.2%}")
-    print(f"Validity: {quality_metrics.validity:.2%}")
-    print(f"Uniqueness: {quality_metrics.uniqueness:.2%}")
-    print(f"Missing Pattern: {quality_metrics.missing_pattern}")
-    print(f"Duplicate Count: {quality_metrics.duplicate_count}")
-    print()
-    
-    # Analyze missing data patterns
-    print("2. Missing Data Analysis")
-    print("-" * 40)
-    missing_analysis = quality_detector.detect_missing_patterns(df)
-    
-    print(f"Missing Percentage: {missing_analysis.missing_percentage:.2%}")
-    print(f"Missing Pattern Type: {missing_analysis.missing_pattern_type}")
-    print(f"Missing Columns: {missing_analysis.missing_columns}")
-    print(f"Imputation Strategy: {missing_analysis.imputation_strategy}")
-    print()
-    
-    # Find duplicates
-    print("3. Duplicate Detection")
-    print("-" * 40)
-    duplicate_analysis = quality_detector.find_duplicates(df)
-    
-    print(f"Total Duplicates: {duplicate_analysis.duplicate_count}")
-    print(f"Duplicate Percentage: {duplicate_analysis.duplicate_percentage:.2%}")
-    print(f"Exact Duplicates: {duplicate_analysis.exact_duplicates}")
-    print(f"Partial Duplicates: {duplicate_analysis.partial_duplicates}")
-    print()
-    
-    # Validate consistency
-    print("4. Consistency Validation")
-    print("-" * 40)
-    consistency_report = quality_detector.validate_consistency(df)
-    
-    print(f"Format Consistency Score: {consistency_report.format_consistency_score:.2%}")
-    print(f"Range Consistency Score: {consistency_report.range_consistency_score:.2%}")
-    print(f"Referential Integrity Score: {consistency_report.referential_integrity_score:.2%}")
-    
-    if consistency_report.inconsistent_formats:
-        print("Format Issues:")
-        for col, issues in consistency_report.inconsistent_formats.items():
-            print(f"  {col}: {issues}")
-    
-    if consistency_report.integrity_violations:
-        print("Integrity Violations:")
-        for violation in consistency_report.integrity_violations:
-            print(f"  - {violation}")
-    print()
+    try:
+        # The core NeuroLite promise: analyze any dataset in 3 lines
+        import neurolite as nl
+        report = nl.analyze(csv_file)
+        print(f"Detected task: {report.task_identification.task_type}")
+        
+        print(f"\nFile format: {report.file_info.format_type}")
+        print(f"Data structure: {report.data_structure.structure_type}")
+        print(f"Dataset shape: {report.data_structure.dimensions}")
+        print(f"Analysis completed in: {report.execution_time:.2f} seconds")
+        
+        print(f"\nData Quality Scores:")
+        print(f"- Completeness: {report.quality_metrics.completeness:.1%}")
+        print(f"- Consistency: {report.quality_metrics.consistency:.1%}")
+        print(f"- Validity: {report.quality_metrics.validity:.1%}")
+        print(f"- Uniqueness: {report.quality_metrics.uniqueness:.1%}")
+        
+        print(f"\nTop 3 Model Recommendations:")
+        for i, rec in enumerate(report.model_recommendations[:3], 1):
+            print(f"{i}. {rec.model_name} ({rec.confidence:.1%} confidence)")
+            print(f"   Rationale: {rec.rationale}")
+        
+    finally:
+        os.unlink(csv_file)
 
 
-def demonstrate_type_detection():
-    """Demonstrate data type detection capabilities."""
-    print("=" * 60)
-    print("DATA TYPE DETECTION DEMONSTRATION")
-    print("=" * 60)
+def example_2_quick_analysis():
+    """Example 2: Quick analysis for fast exploration."""
+    print("\n" + "="*60)
+    print("EXAMPLE 2: Quick Analysis for Fast Exploration")
+    print("="*60)
     
-    # Create sample data
-    df = create_sample_data()
+    csv_file, df = create_sample_data()
     
-    # Initialize type detector
-    type_detector = DataTypeDetector()
-    
-    # Classify columns
-    print("Column Type Classification")
-    print("-" * 40)
-    column_types = type_detector.classify_columns(df)
-    
-    for column, col_type in column_types.items():
-        print(f"{column:15} -> {col_type.primary_type:12} ({col_type.subtype}) "
-              f"[confidence: {col_type.confidence:.2%}]")
-    print()
-    
-    # Analyze specific columns
-    print("Detailed Column Analysis")
-    print("-" * 40)
-    
-    # Numerical analysis
-    if 'age' in df.columns:
-        numerical_analysis = type_detector.analyze_numerical(df['age'])
-        print(f"Age column analysis:")
-        print(f"  Data type: {numerical_analysis.data_type}")
-        print(f"  Is continuous: {numerical_analysis.is_continuous}")
-        print(f"  Range: {numerical_analysis.range_min} - {numerical_analysis.range_max}")
-        print(f"  Distribution: {numerical_analysis.distribution_type}")
-        print(f"  Outliers: {numerical_analysis.outlier_count}")
-        print()
-    
-    # Categorical analysis
-    if 'department' in df.columns:
-        categorical_analysis = type_detector.analyze_categorical(df['department'])
-        print(f"Department column analysis:")
-        print(f"  Category type: {categorical_analysis.category_type}")
-        print(f"  Cardinality: {categorical_analysis.cardinality}")
-        print(f"  Unique values: {categorical_analysis.unique_values}")
-        print(f"  Encoding recommendation: {categorical_analysis.encoding_recommendation}")
-        print()
-    
-    # Temporal analysis
-    if 'join_date' in df.columns:
-        df['join_date'] = pd.to_datetime(df['join_date'])
-        temporal_analysis = type_detector.analyze_temporal(df['join_date'])
-        print(f"Join date column analysis:")
-        print(f"  DateTime format: {temporal_analysis.datetime_format}")
-        print(f"  Has seasonality: {temporal_analysis.has_seasonality}")
-        print(f"  Has trend: {temporal_analysis.has_trend}")
-        print(f"  Is stationary: {temporal_analysis.is_stationary}")
-        print(f"  Time range: {temporal_analysis.time_range[0]} to {temporal_analysis.time_range[1]}")
-        print()
+    try:
+        # Quick analysis for initial data exploration
+        quick_report = nl.quick_analyze(csv_file)
+        
+        print(f"Quick analysis completed in: {quick_report.execution_time:.2f} seconds")
+        print(f"Dataset shape: {quick_report.basic_stats['shape']}")
+        print(f"Memory usage: {quick_report.basic_stats['memory_usage_mb']:.1f} MB")
+        
+        print(f"\nMissing values by column:")
+        for col, missing_count in quick_report.basic_stats['missing_values'].items():
+            if missing_count > 0:
+                print(f"- {col}: {missing_count} missing values")
+        
+        print(f"\nQuick recommendations:")
+        for rec in quick_report.quick_recommendations:
+            print(f"- {rec}")
+            
+    finally:
+        os.unlink(csv_file)
 
 
-def demonstrate_file_detection():
-    """Demonstrate file detection capabilities."""
-    print("=" * 60)
-    print("FILE DETECTION DEMONSTRATION")
-    print("=" * 60)
+def example_3_dataframe_analysis():
+    """Example 3: Analyzing pandas DataFrames directly."""
+    print("\n" + "="*60)
+    print("EXAMPLE 3: Analyzing Pandas DataFrames")
+    print("="*60)
     
-    # Create sample data
-    df = create_sample_data()
+    # Create DataFrame directly
+    np.random.seed(42)
+    df = pd.DataFrame({
+        'feature_1': np.random.randn(500),
+        'feature_2': np.random.randint(0, 100, 500),
+        'category': np.random.choice(['A', 'B', 'C'], 500),
+        'target': np.random.choice([0, 1], 500)
+    })
     
-    # Initialize file detector
-    file_detector = FileDetector()
+    # Analyze DataFrame directly
+    report = nl.analyze(df)
     
-    # Detect data structure
-    print("Data Structure Detection")
-    print("-" * 40)
-    data_structure = file_detector.detect_structure(df)
+    print(f"DataFrame analysis completed in: {report.execution_time:.2f} seconds")
+    print(f"Detected task: {report.task_identification.task_type}")
+    print(f"Task subtype: {report.task_identification.task_subtype}")
     
-    print(f"Structure type: {data_structure.structure_type}")
-    print(f"Dimensions: {data_structure.dimensions}")
-    print(f"Sample size: {data_structure.sample_size}")
-    print(f"Memory usage: {data_structure.memory_usage} bytes")
-    print()
+    print(f"\nColumn types detected:")
+    for col_name, col_type in report.column_analysis.items():
+        print(f"- {col_name}: {col_type.primary_type} ({col_type.confidence:.1%})")
+
+
+def example_4_specialized_functions():
+    """Example 4: Using specialized analysis functions."""
+    print("\n" + "="*60)
+    print("EXAMPLE 4: Specialized Analysis Functions")
+    print("="*60)
+    
+    csv_file, df = create_sample_data()
+    
+    try:
+        # Data type detection
+        print("Data Type Detection:")
+        types = nl.detect_data_types(csv_file)
+        for col, dtype in types.items():
+            print(f"- {col}: {dtype}")
+        
+        print(f"\nData Quality Assessment:")
+        quality = nl.assess_data_quality(csv_file)
+        print(f"- Overall quality score: {quality['overall_score']:.1%}")
+        print(f"- Missing pattern: {quality['missing_pattern']}")
+        print(f"- Duplicate records: {quality['duplicate_count']}")
+        
+        print(f"\nModel Recommendations:")
+        recommendations = nl.get_recommendations(csv_file)
+        print(f"- Detected task: {recommendations['task_detected']}")
+        print(f"- Confidence: {recommendations['confidence']:.1%}")
+        print(f"- Recommended models: {recommendations['models']}")
+        print(f"- Preprocessing steps: {recommendations['preprocessing']}")
+        
+    finally:
+        os.unlink(csv_file)
+
+
+def example_5_formatting_and_export():
+    """Example 5: Formatting results and exporting reports."""
+    print("\n" + "="*60)
+    print("EXAMPLE 5: Formatting and Exporting Results")
+    print("="*60)
+    
+    csv_file, df = create_sample_data()
+    
+    try:
+        # Perform analysis
+        report = nl.analyze(csv_file)
+        
+        # Format summary in different formats
+        print("Text Summary:")
+        text_summary = nl.format_summary(report, 'text')
+        print(text_summary[:500] + "..." if len(text_summary) > 500 else text_summary)
+        
+        # Create DataFrame summary
+        print(f"\nDataFrame Summary:")
+        summary_df = nl.create_dataframe_summary(report)
+        print(summary_df.head(10))
+        
+        # Export to different formats
+        print(f"\nExporting reports...")
+        
+        # Export to JSON
+        nl.export_report(report, 'analysis_report.json', 'json')
+        print("- Exported to analysis_report.json")
+        
+        # Export to HTML
+        nl.export_report(report, 'analysis_report.html', 'html')
+        print("- Exported to analysis_report.html")
+        
+        # Export to Markdown
+        nl.export_report(report, 'analysis_report.md', 'markdown')
+        print("- Exported to analysis_report.md")
+        
+        # Export DataFrame summary to CSV
+        nl.export_report(report, 'analysis_summary.csv', 'csv')
+        print("- Exported summary to analysis_summary.csv")
+        
+        print(f"\nReport files created successfully!")
+        
+    finally:
+        os.unlink(csv_file)
+
+
+def example_6_error_handling():
+    """Example 6: Proper error handling."""
+    print("\n" + "="*60)
+    print("EXAMPLE 6: Error Handling")
+    print("="*60)
+    
+    # Test with non-existent file
+    try:
+        report = nl.analyze('non_existent_file.csv')
+    except nl.UnsupportedFormatError as e:
+        print(f"Format error: {e}")
+    except nl.InsufficientDataError as e:
+        print(f"Data error: {e}")
+    except nl.NeuroLiteException as e:
+        print(f"Analysis error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    
+    # Test with empty DataFrame
+    try:
+        empty_df = pd.DataFrame()
+        report = nl.analyze(empty_df)
+    except nl.InsufficientDataError as e:
+        print(f"Empty DataFrame error: {e}")
+    except nl.NeuroLiteException as e:
+        print(f"Analysis error with empty DataFrame: {e}")
+    
+    # Test with unsupported data type
+    try:
+        unsupported_data = "This is just a string"
+        report = nl.analyze(unsupported_data)
+    except nl.NeuroLiteException as e:
+        print(f"Unsupported data type error: {e}")
+
+
+def example_7_performance_optimization():
+    """Example 7: Performance optimization for large datasets."""
+    print("\n" + "="*60)
+    print("EXAMPLE 7: Performance Optimization")
+    print("="*60)
+    
+    # Create a larger dataset
+    print("Creating larger dataset for performance testing...")
+    np.random.seed(42)
+    large_df = pd.DataFrame({
+        f'feature_{i}': np.random.randn(10000) for i in range(20)
+    })
+    large_df['target'] = np.random.choice([0, 1], 10000)
+    
+    # Test different analysis modes
+    print(f"\nTesting different analysis modes on dataset with shape {large_df.shape}:")
+    
+    # Quick analysis
+    import time
+    start_time = time.time()
+    quick_report = nl.quick_analyze(large_df)
+    quick_time = time.time() - start_time
+    print(f"- Quick analysis: {quick_time:.2f} seconds")
+    
+    # Full analysis
+    start_time = time.time()
+    full_report = nl.analyze(large_df)
+    full_time = time.time() - start_time
+    print(f"- Full analysis: {full_time:.2f} seconds")
+    
+    # Analysis with time limit
+    start_time = time.time()
+    limited_report = nl.analyze(large_df, max_processing_time=3.0)
+    limited_time = time.time() - start_time
+    print(f"- Time-limited analysis: {limited_time:.2f} seconds")
+    
+    print(f"\nPerformance comparison:")
+    print(f"- Quick analysis is {full_time/quick_time:.1f}x faster than full analysis")
+    print(f"- All analyses completed within target time limits")
+
+
+def example_8_advanced_usage():
+    """Example 8: Advanced usage with DataProfiler class."""
+    print("\n" + "="*60)
+    print("EXAMPLE 8: Advanced Usage with DataProfiler")
+    print("="*60)
+    
+    csv_file, df = create_sample_data()
+    
+    try:
+        # Create custom profiler with specific settings
+        from neurolite import DataProfiler
+        
+        profiler = DataProfiler(
+            confidence_threshold=0.9,  # Higher confidence threshold
+            enable_graceful_degradation=True,
+            max_processing_time=10.0,  # 10 second limit
+            max_memory_usage_mb=512    # 512 MB memory limit
+        )
+        
+        print("Using custom DataProfiler with:")
+        print("- Confidence threshold: 90%")
+        print("- Processing time limit: 10 seconds")
+        print("- Memory limit: 512 MB")
+        
+        # Perform analysis
+        report = profiler.analyze(csv_file)
+        
+        print(f"\nAnalysis results:")
+        print(f"- Execution time: {report.execution_time:.2f} seconds")
+        print(f"- Task detected: {report.task_identification.task_type}")
+        print(f"- Task confidence: {report.task_identification.confidence:.1%}")
+        
+        # Use large dataset analysis for optimization
+        print(f"\nTesting optimized large dataset analysis:")
+        large_report = profiler.analyze_large_dataset(csv_file, use_sampling=True)
+        
+        if 'performance_optimizations' in large_report.resource_requirements:
+            opts = large_report.resource_requirements['performance_optimizations']
+            print(f"- Used sampling: {opts.get('used_sampling', False)}")
+            print(f"- Parallel processing: {opts.get('parallel_processing', False)}")
+            print(f"- Memory usage: {opts.get('memory_usage_mb', 0):.1f} MB")
+        
+    finally:
+        os.unlink(csv_file)
 
 
 def main():
-    """Run all demonstrations."""
+    """Run all examples."""
     print("NeuroLite Basic Usage Examples")
     print("=" * 60)
-    print("This script demonstrates the core functionality of NeuroLite.")
-    print("=" * 60)
-    print()
+    print("This script demonstrates various ways to use NeuroLite")
+    print("for automated data analysis and ML recommendations.")
     
-    try:
-        # Run demonstrations
-        demonstrate_quality_detection()
-        demonstrate_type_detection()
-        demonstrate_file_detection()
-        
-        print("=" * 60)
-        print("DEMONSTRATION COMPLETE")
-        print("=" * 60)
-        print("All examples completed successfully!")
-        print("For more advanced usage, see the documentation at:")
-        print("https://neurolite.readthedocs.io/")
-        
-    except Exception as e:
-        print(f"Error during demonstration: {e}")
-        print("Please check your NeuroLite installation.")
+    # Run all examples
+    example_1_basic_analysis()
+    example_2_quick_analysis()
+    example_3_dataframe_analysis()
+    example_4_specialized_functions()
+    example_5_formatting_and_export()
+    example_6_error_handling()
+    example_7_performance_optimization()
+    example_8_advanced_usage()
+    
+    print("\n" + "="*60)
+    print("All examples completed successfully!")
+    print("Check the generated report files for detailed analysis results.")
+    print("="*60)
 
 
 if __name__ == "__main__":

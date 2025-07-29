@@ -13,7 +13,28 @@ from datetime import datetime
 
 @dataclass
 class FileFormat:
-    """Represents detected file format information."""
+    """
+    Represents detected file format information.
+    
+    This class contains information about the detected file format, including
+    the format type, confidence level, and additional metadata.
+    
+    Attributes:
+        format_type: The detected file format (e.g., 'CSV', 'JSON', 'EXCEL')
+        confidence: Confidence level of the detection (0.0 to 1.0)
+        mime_type: MIME type of the file
+        encoding: Character encoding of the file (e.g., 'utf-8')
+        metadata: Additional metadata about the file format
+        
+    Examples:
+        >>> file_format = FileFormat(
+        ...     format_type='CSV',
+        ...     confidence=0.95,
+        ...     mime_type='text/csv',
+        ...     encoding='utf-8'
+        ... )
+        >>> print(f"Detected {file_format.format_type} with {file_format.confidence:.1%} confidence")
+    """
     format_type: str
     confidence: float
     mime_type: str

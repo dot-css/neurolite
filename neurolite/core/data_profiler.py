@@ -11,6 +11,8 @@ from typing import Union, Dict, Any, Optional, List
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 from .data_models import (
     ProfileReport, QuickReport, FileFormat, DataStructure, 
@@ -25,6 +27,7 @@ from .exceptions import (
 from ..detectors import FileDetector, DataTypeDetector, QualityDetector, DomainDetector
 from ..analyzers import StatisticalAnalyzer, ComplexityAnalyzer
 from ..recommenders import ModelRecommender, PreprocessingRecommender
+from .performance import LazyDataLoader, SamplingStrategy, ParallelProcessor, MemoryMonitor
 
 
 class DataProfiler:
@@ -61,6 +64,10 @@ class DataProfiler:
         
         # Initialize components
         self._initialize_components()
+        
+        # Performance optimization components
+        self.parallel_processor = ParallelProcessor(max_workers=min(mp.cpu_count(), 4))
+        self.memory_monitor = MemoryMonitor(max_memory_usage_mb)
         
         # Analysis state
         self._analysis_start_time = None
@@ -632,3 +639,306 @@ class DataProfiler:
         except Exception:
             # Fallback to conservative sample size
             return min(5000, len(df))
+    
+    def analyze_large_dataset(self, data_source: Union[str, pd.DataFrame, np.ndarray],
+                            use_sampling: bool = True, chunk_size: int = 10000) -> ProfileReport:
+        """
+        Analyze large datasets using streaming, sampling, and parallel processing.
+        
+        This method is optimized for datasets that are too large to fit in memory
+        or require significant processing time. It uses lazy loading, intelligent
+        sampling, and parallel processing to provide comprehensive analysis.
+        
+        Args:
+            data_source: File path, pandas DataFrame, or numpy array to analyze
+            use_sampling: Whether to use sampling for detailed analysis
+            chunk_size: Size of chunks for streaming processing
+            
+        Returns:
+            ProfileReport: Comprehensive analysis results with performance optimizations
+            
+        Raises:
+            UnsupportedFormatError: If the data format is not supported
+            ResourceLimitError: If resource limits are exceeded
+            ProcessingError: If analysis fails
+        """
+        self._analysis_start_time = time.time()
+        self._failed_components = []
+        
+        try:
+            # Validate input
+            validate_input_data(data_source, "data_source")
+            
+            # Initialize lazy loader for streaming
+            if isinstance(data_source, str):
+                lazy_loader = LazyDataLoader(data_source, chunk_size)
+                metadata = lazy_loader.get_metadata()
+                
+                # Determine if we need sampling
+                total_rows = metadata['total_rows']
+                if use_sampling and total_rows > 50000:
+                    # Use sampling for detailed analysis
+                    sample_size = SamplingStrategy.adaptive_sample_size(
+                        total_rows, len(metadata['columns']), 
+                        self.max_memory_usage_mb or 500
+                    )
+                    
+                    # Get representative sample using reservoir sampling
+                    sample_df = SamplingStrategy.reservoir_sample(
+                        iter(lazy_loader), sample_size
+                    )
+                    
+                    # Perform detailed analysis on sample
+                    df, file_info = sample_df, FileFormat(
+                        format_type=Path(data_source).suffix[1:].upper(),
+                        confidence=1.0,
+                        mime_type='application/octet-stream',
+                        encoding='utf-8',
+                        metadata={
+                            'sampled': True,
+                            'sample_size': len(sample_df),
+                            'original_size': total_rows
+                        }
+                    )
+                else:
+                    # Load full dataset if small enough
+                    df, file_info = self._load_data(data_source)
+            else:
+                # For DataFrames and arrays, use existing logic with potential sampling
+                df, file_info = self._load_data(data_source)
+                
+                # Apply sampling if dataset is large
+                if use_sampling and len(df) > 50000:
+                    sample_size = SamplingStrategy.adaptive_sample_size(
+                        len(df), len(df.columns),
+                        self.max_memory_usage_mb or 500
+                    )
+                    df = SamplingStrategy.random_sample(df, sample_size)
+                    file_info.metadata['sampled'] = True
+                    file_info.metadata['sample_size'] = len(df)
+            
+            # Check resource limits
+            self._check_resource_limits(df)
+            
+            # Use parallel processing for analysis components
+            analysis_tasks = [
+                ('structure', self._detect_structure, df, file_info),
+                ('columns', self._analyze_columns, df),
+                ('quality', self._assess_quality, df),
+                ('statistics', self._analyze_statistics, df)
+            ]
+            
+            # Execute analysis tasks in parallel where possible
+            analysis_results = self._execute_parallel_analysis(analysis_tasks)
+            
+            # Sequential tasks that depend on previous results
+            data_structure = analysis_results['structure']
+            column_analysis = analysis_results['columns']
+            quality_metrics = analysis_results['quality']
+            statistical_properties = analysis_results['statistics']
+            
+            # Domain-specific analysis
+            domain_analysis = self._analyze_domain(df, data_structure)
+            
+            # Task identification
+            task_identification = self._identify_task(df, column_analysis)
+            
+            # Generate recommendations in parallel
+            recommendation_tasks = [
+                ('models', self._recommend_models, df, task_identification, statistical_properties),
+                ('preprocessing', self._recommend_preprocessing, df, column_analysis, quality_metrics),
+                ('resources', self._estimate_resources, df, task_identification)
+            ]
+            
+            recommendation_results = self._execute_parallel_recommendations(recommendation_tasks)
+            
+            # Calculate execution time
+            execution_time = time.time() - self._analysis_start_time
+            
+            # Create comprehensive report
+            report = ProfileReport(
+                file_info=file_info,
+                data_structure=data_structure,
+                column_analysis=column_analysis,
+                quality_metrics=quality_metrics,
+                statistical_properties=statistical_properties,
+                domain_analysis=domain_analysis,
+                task_identification=task_identification,
+                model_recommendations=recommendation_results['models'],
+                preprocessing_recommendations=recommendation_results['preprocessing'],
+                resource_requirements=recommendation_results['resources'],
+                execution_time=execution_time
+            )
+            
+            # Add performance metrics and warnings
+            if self._failed_components and self.enable_graceful_degradation:
+                report.resource_requirements['warnings'] = {
+                    'failed_components': self._failed_components,
+                    'message': 'Some analysis components failed but results are still valid'
+                }
+            
+            # Add performance optimization info
+            report.resource_requirements['performance_optimizations'] = {
+                'used_sampling': file_info.metadata.get('sampled', False),
+                'parallel_processing': True,
+                'memory_usage_mb': self.memory_monitor.get_memory_usage(),
+                'chunk_processing': isinstance(data_source, str) and use_sampling
+            }
+            
+            return report
+            
+        except Exception as e:
+            if isinstance(e, NeuroLiteException):
+                raise
+            else:
+                raise ProcessingError("large_dataset_analysis", e)
+    
+    def _execute_parallel_analysis(self, analysis_tasks: List[tuple]) -> Dict[str, Any]:
+        """Execute analysis tasks in parallel where possible."""
+        results = {}
+        
+        try:
+            # Separate independent tasks that can run in parallel
+            independent_tasks = []
+            dependent_tasks = []
+            
+            for task_name, task_func, *args in analysis_tasks:
+                if task_name in ['structure', 'columns', 'quality', 'statistics']:
+                    # These can run independently
+                    independent_tasks.append((task_name, task_func, args))
+                else:
+                    dependent_tasks.append((task_name, task_func, args))
+            
+            # Execute independent tasks in parallel using threads (I/O bound)
+            if len(independent_tasks) > 1:
+                with ThreadPoolExecutor(max_workers=min(4, len(independent_tasks))) as executor:
+                    future_to_task = {
+                        executor.submit(task_func, *args): task_name
+                        for task_name, task_func, args in independent_tasks
+                    }
+                    
+                    for future in future_to_task:
+                        task_name = future_to_task[future]
+                        try:
+                            results[task_name] = future.result()
+                        except Exception as e:
+                            if self.enable_graceful_degradation:
+                                self._failed_components.append(f"parallel_{task_name}")
+                                results[task_name] = self._get_fallback_result(task_name)
+                            else:
+                                raise ProcessingError(f"parallel_{task_name}", e)
+            else:
+                # Execute sequentially if only one task
+                for task_name, task_func, args in independent_tasks:
+                    try:
+                        results[task_name] = task_func(*args)
+                    except Exception as e:
+                        if self.enable_graceful_degradation:
+                            self._failed_components.append(task_name)
+                            results[task_name] = self._get_fallback_result(task_name)
+                        else:
+                            raise ProcessingError(task_name, e)
+            
+            # Execute dependent tasks sequentially
+            for task_name, task_func, args in dependent_tasks:
+                try:
+                    results[task_name] = task_func(*args)
+                except Exception as e:
+                    if self.enable_graceful_degradation:
+                        self._failed_components.append(task_name)
+                        results[task_name] = self._get_fallback_result(task_name)
+                    else:
+                        raise ProcessingError(task_name, e)
+            
+            return results
+            
+        except Exception as e:
+            # Fallback to sequential execution
+            warnings.warn(f"Parallel analysis failed: {e}. Falling back to sequential execution.")
+            
+            for task_name, task_func, *args in analysis_tasks:
+                try:
+                    results[task_name] = task_func(*args[0])
+                except Exception as task_e:
+                    if self.enable_graceful_degradation:
+                        self._failed_components.append(task_name)
+                        results[task_name] = self._get_fallback_result(task_name)
+                    else:
+                        raise ProcessingError(task_name, task_e)
+            
+            return results
+    
+    def _execute_parallel_recommendations(self, recommendation_tasks: List[tuple]) -> Dict[str, Any]:
+        """Execute recommendation tasks in parallel."""
+        results = {}
+        
+        try:
+            # All recommendation tasks can run in parallel
+            with ThreadPoolExecutor(max_workers=min(3, len(recommendation_tasks))) as executor:
+                future_to_task = {}
+                
+                for task_name, task_func, *args in recommendation_tasks:
+                    future = executor.submit(task_func, *args)
+                    future_to_task[future] = task_name
+                
+                for future in future_to_task:
+                    task_name = future_to_task[future]
+                    try:
+                        results[task_name] = future.result()
+                    except Exception as e:
+                        if self.enable_graceful_degradation:
+                            self._failed_components.append(f"parallel_{task_name}")
+                            results[task_name] = self._get_fallback_result(task_name)
+                        else:
+                            raise ProcessingError(f"parallel_{task_name}", e)
+            
+            return results
+            
+        except Exception as e:
+            # Fallback to sequential execution
+            warnings.warn(f"Parallel recommendations failed: {e}. Falling back to sequential execution.")
+            
+            for task_name, task_func, *args in recommendation_tasks:
+                try:
+                    results[task_name] = task_func(*args)
+                except Exception as task_e:
+                    if self.enable_graceful_degradation:
+                        self._failed_components.append(task_name)
+                        results[task_name] = self._get_fallback_result(task_name)
+                    else:
+                        raise ProcessingError(task_name, task_e)
+            
+            return results
+    
+    def _get_fallback_result(self, task_name: str) -> Any:
+        """Get fallback result for failed tasks."""
+        fallbacks = {
+            'structure': DataStructure(
+                structure_type='tabular',
+                dimensions=(0, 0),
+                sample_size=0,
+                memory_usage=0
+            ),
+            'columns': {},
+            'quality': QualityMetrics(
+                completeness=0.0,
+                consistency=0.0,
+                validity=0.0,
+                uniqueness=0.0,
+                missing_pattern="unknown",
+                duplicate_count=0
+            ),
+            'statistics': StatisticalProperties(
+                distribution="unknown",
+                parameters={}
+            ),
+            'models': [],
+            'preprocessing': [],
+            'resources': {
+                "estimated_memory_mb": 0,
+                "estimated_processing_time_seconds": 0,
+                "recommended_hardware": "cpu"
+            }
+        }
+        
+        return fallbacks.get(task_name, None)
