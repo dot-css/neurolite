@@ -182,7 +182,7 @@ neurolite_cache/
 *.hdf5
 
 # Model files
-models/
+
 *.pkl
 *.joblib
 *.model
