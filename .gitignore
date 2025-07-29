@@ -173,8 +173,7 @@ neurolite_cache/
 *.neurolite
 
 # Data files (add specific patterns as needed)
-data/
-datasets/
+
 *.csv
 *.json
 *.xlsx
