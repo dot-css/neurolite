@@ -5,6 +5,7 @@ __pycache__/
 .github/
 .kiro/
 
+
 # C extensions
 *.so
 
@@ -42,6 +43,9 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .nox/
+.gitignore
+iris.csv
+test.py
 .coverage
 .coverage.*
 .cache
