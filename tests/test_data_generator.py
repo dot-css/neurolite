@@ -148,7 +148,7 @@ class TestDataGenerator:
         for i in range(n_series):
             # Base value
             base_value = 100 + i * 50
-            values = np.full(n_points, base_value)
+            values = np.full(n_points, base_value, dtype=float)
             
             # Add trend
             if trend:
