@@ -8,7 +8,7 @@ audio, and video files.
 """
 
 from .detector import DataTypeDetector, DataType, detect_data_type
-from .loader import DataLoader, Dataset, load_data
+from .loader import DataLoader, Dataset, DatasetInfo, load_data
 from .validator import DataValidator, ValidationResult, validate_data
 from .preprocessor import (
     BasePreprocessor, ImagePreprocessor, TextPreprocessor, TabularPreprocessor,
@@ -31,6 +31,7 @@ __all__ = [
     'detect_data_type',
     'DataLoader',
     'Dataset',
+    'DatasetInfo',
     'load_data',
     
     # Validation
