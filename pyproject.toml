@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurolite"
+version = "0.1.0"
+description = "AI/ML/DL/NLP productivity library for minimal-code machine learning workflows"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "NeuroLite Team", email = "team@neurolite.ai"}
+]
+keywords = ["machine learning", "deep learning", "nlp", "computer vision", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "scikit-learn>=1.0.0",
+    "torch>=1.9.0",
+    "torchvision>=0.10.0",
+    "transformers>=4.20.0",
+    "optuna>=3.0.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+    "plotly>=5.0.0",
+    "flask>=2.0.0",
+    "fastapi>=0.70.0",
+    "uvicorn>=0.15.0",
+    "pydantic>=1.8.0",
+    "click>=8.0.0",
+    "tqdm>=4.60.0",
+    "pillow>=8.0.0",
+    "opencv-python>=4.5.0",
+    "librosa>=0.9.0",
+    "onnx>=1.12.0",
+    "onnxruntime>=1.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "mypy>=0.991",
+    "pre-commit>=2.20.0",
+]
+tensorflow = [
+    "tensorflow>=2.9.0",
+]
+xgboost = [
+    "xgboost>=1.6.0",
+]
+all = [
+    "neurolite[tensorflow,xgboost]",
+]
+
+[project.urls]
+Homepage = "https://github.com/dot-css/neurolite"
+Documentation = "https://neurolite.readthedocs.io"
+Repository = "https://github.com/dot-css/neurolite"
+"Bug Tracker" = "https://github.com/dot-css/neurolite/issues"
+
+[project.scripts]
+neurolite = "neurolite.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["neurolite*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=neurolite --cov-report=html --cov-report=term-missing"
