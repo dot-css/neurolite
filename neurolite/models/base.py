@@ -329,8 +329,6 @@ class SklearnModelAdapter(BaseModel):
     @property
     def capabilities(self) -> ModelCapabilities:
         """Get capabilities based on the sklearn model type."""
-        # This is a simplified implementation - in practice, you'd have
-        # a more sophisticated mapping based on the actual sklearn model
         from sklearn.base import ClassifierMixin, RegressorMixin
         
         supported_tasks = []
@@ -351,8 +349,28 @@ class SklearnModelAdapter(BaseModel):
                 TaskType.LINEAR_REGRESSION
             ])
         
-        # Check for feature importance
-        if hasattr(self.sklearn_model, 'feature_importances_'):
+        # Check for feature importance based on model type
+        model_class_name = self.sklearn_model.__class__.__name__
+        
+        # Models that have feature_importances_ after training
+        tree_based_models = [
+            'RandomForestClassifier', 'RandomForestRegressor',
+            'ExtraTreesClassifier', 'ExtraTreesRegressor',
+            'GradientBoostingClassifier', 'GradientBoostingRegressor',
+            'DecisionTreeClassifier', 'DecisionTreeRegressor',
+            'AdaBoostClassifier', 'AdaBoostRegressor',
+            'XGBClassifier', 'XGBRegressor',
+            'LGBMClassifier', 'LGBMRegressor',
+            'CatBoostClassifier', 'CatBoostRegressor'
+        ]
+        
+        # Models that have coef_ after training
+        linear_models = [
+            'LogisticRegression', 'LinearRegression', 'Ridge', 'Lasso',
+            'ElasticNet', 'SGDClassifier', 'SGDRegressor', 'SVC', 'SVR'
+        ]
+        
+        if model_class_name in tree_based_models or model_class_name in linear_models:
             supports_feature_importance = True
         
         return ModelCapabilities(

@@ -11,6 +11,7 @@ from .factory import ModelFactory, create_model
 # Import model registration functions
 from .ml.sklearn_models import register_sklearn_models
 from .ml.xgboost_models import register_xgboost_models
+from .ml.ensemble_models import register_ensemble_models
 
 
 def initialize_models():
@@ -26,6 +27,12 @@ def initialize_models():
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Failed to register XGBoost models: {e}")
+    
+    try:
+        register_ensemble_models()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to register ensemble models: {e}")
 
 
 # Auto-initialize models when module is imported
