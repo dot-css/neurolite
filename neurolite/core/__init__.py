@@ -75,6 +75,35 @@ from .utils import (
     setup_matplotlib_backend
 )
 
+from .plugins import (
+    PluginRegistry,
+    PluginLoader,
+    ModelPlugin,
+    PreprocessorPlugin,
+    PluginMetadata,
+    PluginError,
+    PluginValidationError,
+    PluginLoadError,
+    get_plugin_registry,
+    register_model_plugin,
+    register_preprocessor_plugin,
+    load_plugin_from_file,
+    load_plugins_from_directory,
+    load_plugins_from_config
+)
+
+from .plugin_integration import (
+    PluginIntegration,
+    get_plugin_integration,
+    auto_discover_and_load_plugins,
+    initialize_plugin_system
+)
+
+from .plugin_templates import (
+    PluginTemplateGenerator,
+    create_plugin_template
+)
+
 __all__ = [
     # Configuration
     'NeuroLiteConfig',
@@ -140,5 +169,27 @@ __all__ = [
     'unflatten_dict',
     'get_class_from_string',
     'is_notebook',
-    'setup_matplotlib_backend'
+    'setup_matplotlib_backend',
+    
+    # Plugin System
+    'PluginRegistry',
+    'PluginLoader',
+    'ModelPlugin',
+    'PreprocessorPlugin',
+    'PluginMetadata',
+    'PluginError',
+    'PluginValidationError',
+    'PluginLoadError',
+    'get_plugin_registry',
+    'register_model_plugin',
+    'register_preprocessor_plugin',
+    'load_plugin_from_file',
+    'load_plugins_from_directory',
+    'load_plugins_from_config',
+    'PluginIntegration',
+    'get_plugin_integration',
+    'auto_discover_and_load_plugins',
+    'initialize_plugin_system',
+    'PluginTemplateGenerator',
+    'create_plugin_template'
 ]
