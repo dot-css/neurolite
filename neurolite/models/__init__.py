@@ -13,6 +13,7 @@ from .ml.sklearn_models import register_sklearn_models
 from .ml.xgboost_models import register_xgboost_models
 from .ml.ensemble_models import register_ensemble_models
 from .dl.vision import register_vision_models
+from .dl.nlp import register_nlp_models
 
 
 def initialize_models():
@@ -40,6 +41,12 @@ def initialize_models():
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Failed to register vision models: {e}")
+    
+    try:
+        register_nlp_models()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to register NLP models: {e}")
 
 
 # Auto-initialize models when module is imported
