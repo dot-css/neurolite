@@ -418,3 +418,31 @@ class GPUError(ResourceError):
             context={"reason": reason},
             **kwargs
         )
+
+
+class VisualizationError(NeuroLiteError):
+    """Visualization-related errors."""
+    
+    def __init__(self, message: str, **kwargs):
+        kwargs.setdefault('error_code', 'VISUALIZATION_ERROR')
+        super().__init__(message, **kwargs)
+
+
+class PlottingError(VisualizationError):
+    """Raised when plotting operations fail."""
+    
+    def __init__(self, plot_type: str, reason: str, **kwargs):
+        message = f"Failed to create {plot_type} plot: {reason}"
+        suggestions = [
+            "Check if the required plotting backend is installed",
+            "Ensure input data is in the correct format",
+            "Try using a different plotting backend",
+            "Verify that the data contains the required information for this plot type"
+        ]
+        super().__init__(
+            message,
+            suggestions=suggestions,
+            error_code="PLOTTING_ERROR",
+            context={"plot_type": plot_type, "reason": reason},
+            **kwargs
+        )
