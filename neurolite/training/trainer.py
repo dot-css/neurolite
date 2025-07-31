@@ -187,6 +187,59 @@ class TrainingEngine:
         """Add a custom callback."""
         self.callback_manager.add_callback(callback)
     
+    def optimize_hyperparameters(
+        self,
+        model_factory: Any,
+        X_train: Any,
+        y_train: Any,
+        X_val: Optional[Any] = None,
+        y_val: Optional[Any] = None,
+        task_type: Optional[TaskType] = None,
+        data_type: Optional[DataType] = None,
+        optimization_config: Optional[Any] = None,
+        **kwargs
+    ) -> Any:
+        """
+        Optimize hyperparameters for the given model and data.
+        
+        Args:
+            model_factory: Function that creates model instances
+            X_train: Training features
+            y_train: Training targets
+            X_val: Validation features (optional)
+            y_val: Validation targets (optional)
+            task_type: Type of ML task
+            data_type: Type of input data
+            optimization_config: Hyperparameter optimization configuration
+            **kwargs: Additional parameters
+            
+        Returns:
+            OptimizationResult containing best parameters and model
+        """
+        # Import here to avoid circular imports
+        from .optimizer import HyperparameterOptimizer, OptimizationConfig
+        
+        # Use provided config or create default
+        config = optimization_config or OptimizationConfig()
+        
+        # Create optimizer
+        optimizer = HyperparameterOptimizer(config)
+        
+        # Run optimization
+        result = optimizer.optimize(
+            model_factory=model_factory,
+            X_train=X_train,
+            y_train=y_train,
+            X_val=X_val,
+            y_val=y_val,
+            task_type=task_type,
+            data_type=data_type,
+            base_config=self.config,
+            **kwargs
+        )
+        
+        return result
+    
     def train(
         self,
         model: BaseModel,
