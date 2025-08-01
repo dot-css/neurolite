@@ -80,6 +80,7 @@ class TrainedModel:
     metadata: ModelMetadata
     training_time: float
     best_epoch: int
+    is_trained: bool = True
     
     def predict(self, X: Any, **kwargs) -> PredictionResult:
         """Make predictions using the trained model."""

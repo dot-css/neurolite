@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neurolite"
-version = "0.1.0"
+dynamic = ["version"]
 description = "AI/ML/DL/NLP productivity library for minimal-code machine learning workflows"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -60,6 +60,8 @@ dev = [
     "flake8>=5.0.0",
     "mypy>=0.991",
     "pre-commit>=2.20.0",
+    "build>=0.8.0",
+    "twine>=4.0.0",
 ]
 tensorflow = [
     "tensorflow>=2.9.0",
@@ -83,6 +85,9 @@ neurolite = "neurolite.cli.main:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["neurolite*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "neurolite._version.__version__"}
 
 [tool.black]
 line-length = 88

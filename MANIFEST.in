@@ -1,0 +1,17 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include pyproject.toml
+include setup.py
+include Makefile
+recursive-include neurolite *.py
+recursive-include tests *.py
+recursive-include docs *.md *.rst
+recursive-include examples *.py
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude *.egg-info
+global-exclude build
+global-exclude dist
