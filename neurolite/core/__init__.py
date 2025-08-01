@@ -11,6 +11,7 @@ from .config import (
     TrainingConfig,
     ModelConfig,
     DataConfig,
+    PerformanceConfig,
     DeploymentConfig,
     Environment,
     ConfigManager,
@@ -104,6 +105,30 @@ from .plugin_templates import (
     create_plugin_template
 )
 
+from .performance import (
+    LazyLoader,
+    CacheManager,
+    ParallelProcessor,
+    GPUAccelerator,
+    get_cache_manager,
+    get_gpu_accelerator,
+    lazy_load,
+    cached,
+    parallel_map,
+    gpu_context
+)
+
+from .benchmarks import (
+    BenchmarkResult,
+    BenchmarkSuite,
+    PerformanceMonitor,
+    BenchmarkRunner,
+    get_benchmark_runner,
+    benchmark_data_loading,
+    benchmark_preprocessing,
+    benchmark_model_inference
+)
+
 __all__ = [
     # Configuration
     'NeuroLiteConfig',
@@ -111,6 +136,7 @@ __all__ = [
     'TrainingConfig',
     'ModelConfig',
     'DataConfig',
+    'PerformanceConfig',
     'DeploymentConfig',
     'Environment',
     'ConfigManager',
@@ -191,5 +217,27 @@ __all__ = [
     'auto_discover_and_load_plugins',
     'initialize_plugin_system',
     'PluginTemplateGenerator',
-    'create_plugin_template'
+    'create_plugin_template',
+    
+    # Performance Optimization
+    'LazyLoader',
+    'CacheManager',
+    'ParallelProcessor',
+    'GPUAccelerator',
+    'get_cache_manager',
+    'get_gpu_accelerator',
+    'lazy_load',
+    'cached',
+    'parallel_map',
+    'gpu_context',
+    
+    # Benchmarking
+    'BenchmarkResult',
+    'BenchmarkSuite',
+    'PerformanceMonitor',
+    'BenchmarkRunner',
+    'get_benchmark_runner',
+    'benchmark_data_loading',
+    'benchmark_preprocessing',
+    'benchmark_model_inference'
 ]

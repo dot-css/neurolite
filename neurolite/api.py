@@ -22,6 +22,7 @@ from .models import get_model_registry, create_model, TaskType
 from .training import TrainingEngine, TrainedModel, get_default_training_config
 from .evaluation import evaluate_model
 from .deployment import create_api_server, ModelExporter, ExportedModel
+from .workflows import create_workflow, WorkflowResult
 
 logger = get_logger(__name__)
 
@@ -228,9 +229,10 @@ def train(
     **kwargs
 ) -> TrainedModel:
     """
-    Train a machine learning model with minimal configuration.
+    Train a machine learning model with minimal configuration using domain-specific workflows.
     
-    This is the main entry point for NeuroLite. It automatically handles
+    This is the main entry point for NeuroLite. It automatically detects the data type
+    and uses the appropriate domain-specific workflow (Vision, NLP, or Tabular) to handle
     data loading, preprocessing, model selection, training, and evaluation.
     
     Args:
@@ -242,7 +244,7 @@ def train(
         test_split: Fraction of data to use for testing
         optimize: Whether to perform hyperparameter optimization
         deploy: Whether to create deployment artifacts
-        **kwargs: Additional configuration options
+        **kwargs: Additional configuration options including domain-specific parameters
         
     Returns:
         TrainedModel instance ready for inference and deployment
@@ -251,112 +253,76 @@ def train(
         NeuroLiteError: If training fails
         
     Example:
-        >>> model = train('data/images/', model='resnet', task='classification')
-        >>> predictions = model.predict('new_image.jpg')
+        >>> # Computer Vision
+        >>> model = train('data/images/', model='resnet18', task='image_classification')
+        
+        >>> # NLP
+        >>> model = train('data/text.csv', model='bert', task='text_classification', target='label')
+        
+        >>> # Tabular Data
+        >>> model = train('data/tabular.csv', model='random_forest', task='classification', target='target')
     """
-    logger.info("Starting NeuroLite training workflow")
+    logger.info("Starting NeuroLite multi-domain training workflow")
     start_time = time.time()
     
     try:
-        # Step 1: Validate parameters
-        logger.info("Step 1/7: Validating parameters")
-        params = _validate_parameters(
-            data, model, task, target, validation_split, test_split, 
-            optimize, deploy, **kwargs
+        # Extract domain-specific configuration from kwargs
+        domain_config = {}
+        
+        # Vision-specific parameters
+        vision_params = ['image_size', 'augmentation', 'confidence_threshold', 'nms_threshold', 'augmentation_params']
+        for param in vision_params:
+            if param in kwargs:
+                domain_config[param] = kwargs.pop(param)
+        
+        # NLP-specific parameters
+        nlp_params = ['max_length', 'tokenizer', 'remove_stopwords', 'temperature', 'top_p', 
+                     'max_source_length', 'max_target_length']
+        for param in nlp_params:
+            if param in kwargs:
+                domain_config[param] = kwargs.pop(param)
+        
+        # Tabular-specific parameters
+        tabular_params = ['feature_engineering', 'scaling', 'categorical_encoding', 'missing_value_strategy',
+                         'remove_outliers', 'feature_selection', 'balance_classes', 'n_clusters',
+                         'sequence_length', 'forecast_horizon']
+        for param in tabular_params:
+            if param in kwargs:
+                domain_config[param] = kwargs.pop(param)
+        
+        # Create appropriate workflow based on data type
+        logger.info("Creating domain-specific workflow")
+        workflow = create_workflow(
+            data_path=data,
+            model=model,
+            task=task,
+            target=target,
+            validation_split=validation_split,
+            test_split=test_split,
+            optimize=optimize,
+            deploy=deploy,
+            domain_config=domain_config,
+            **kwargs
         )
         
-        # Step 2: Detect data type and load data
-        logger.info("Step 2/7: Loading and analyzing data")
-        data_type = detect_data_type(params['data_path'])
-        logger.info(f"Detected data type: {data_type.value}")
+        logger.info(f"Using {workflow.__class__.__name__} for data processing and training")
         
-        dataset = load_data(params['data_path'], data_type, target=target)
-        logger.info(f"Loaded dataset with {len(dataset)} samples")
+        # Execute the workflow
+        result = workflow.execute()
         
-        # Step 3: Validate data quality
-        logger.info("Step 3/7: Validating data quality")
-        validation_result = validate_data(dataset)
-        if not validation_result.is_valid:
-            logger.warning(f"Data validation issues found: {validation_result.issues}")
-            # Auto-clean data if issues are found
-            dataset = clean_data(dataset)
-            logger.info("Applied automatic data cleaning")
-        
-        # Step 4: Detect task and select model
-        logger.info("Step 4/7: Detecting task and selecting model")
-        task_type = _detect_task_from_data(data_type, dataset.info, params['task'])
-        logger.info(f"Detected task type: {task_type.value}")
-        
-        selected_model = _select_model(params['model'], data_type, task_type)
-        logger.info(f"Selected model: {selected_model}")
-        
-        # Step 5: Preprocess and split data
-        logger.info("Step 5/7: Preprocessing and splitting data")
-        processed_dataset = preprocess_data(dataset, task_type)
-        
-        data_splits = split_data(
-            processed_dataset,
-            train_ratio=1.0 - params['validation_split'] - params['test_split'],
-            val_ratio=params['validation_split'],
-            test_ratio=params['test_split']
-        )
-        logger.info(f"Data split - Train: {len(data_splits.train)}, "
-                   f"Val: {len(data_splits.validation)}, "
-                   f"Test: {len(data_splits.test)}")
-        
-        # Step 6: Create and train model
-        logger.info("Step 6/7: Training model")
-        model_instance = create_model(selected_model, task_type, **params['kwargs'])
-        
-        # Get training configuration
-        training_config = get_default_training_config(
-            task_type=task_type,
-            data_size=len(data_splits.train),
-            optimize=params['optimize']
-        )
-        
-        # Override with user-provided kwargs
-        for key, value in params['kwargs'].items():
-            if hasattr(training_config, key):
-                setattr(training_config, key, value)
-        
-        # Train the model
-        training_engine = TrainingEngine()
-        trained_model = training_engine.train(
-            model=model_instance,
-            train_data=data_splits.train,
-            val_data=data_splits.validation,
-            config=training_config
-        )
-        
-        # Step 7: Evaluate model
-        logger.info("Step 7/7: Evaluating model")
-        if len(data_splits.test) > 0:
-            evaluation_results = evaluate_model(trained_model, data_splits.test)
-            trained_model.evaluation_results = evaluation_results
-            logger.info(f"Model evaluation completed. "
-                       f"Primary metric: {evaluation_results.primary_metric:.4f}")
-        
-        # Optional: Create deployment artifacts
-        if params['deploy']:
-            logger.info("Creating deployment artifacts")
-            try:
-                api_server = create_api_server(trained_model)
-                trained_model.deployment_info = {
-                    'api_server': api_server,
-                    'created_at': time.time()
-                }
-                logger.info("Deployment artifacts created successfully")
-            except Exception as e:
-                logger.warning(f"Failed to create deployment artifacts: {e}")
-        
+        # Log workflow completion
         total_time = time.time() - start_time
-        logger.info(f"Training completed successfully in {total_time:.2f} seconds")
+        logger.info(f"Multi-domain training workflow completed successfully in {total_time:.2f} seconds")
+        logger.info(f"Data type: {result.data_type.value}, Task type: {result.task_type.value}")
+        logger.info(f"Training time: {result.training_info.get('training_time', 0.0):.2f}s")
         
-        return trained_model
+        if result.evaluation_info.get('primary_metric') is not None:
+            logger.info(f"Primary metric: {result.evaluation_info['primary_metric']:.4f}")
+        
+        return result.trained_model
         
     except Exception as e:
-        logger.error(f"Training failed: {str(e)}")
+        logger.error(f"Multi-domain training workflow failed: {str(e)}")
         
         # Provide helpful error messages and suggestions
         if isinstance(e, (ConfigurationError, DataError, ModelError, TrainingError)):
@@ -364,12 +330,13 @@ def train(
         else:
             # Wrap unexpected errors with helpful context
             raise NeuroLiteError(
-                f"Unexpected error during training: {str(e)}\n"
+                f"Unexpected error during multi-domain training: {str(e)}\n"
                 f"This might be due to:\n"
                 f"1. Incompatible data format or corrupted files\n"
                 f"2. Insufficient system resources (memory/disk space)\n"
-                f"3. Missing dependencies for the selected model\n"
+                f"3. Missing dependencies for the selected model or domain\n"
                 f"4. Network issues when downloading model weights\n"
+                f"5. Unsupported combination of data type, task, and model\n"
                 f"Please check the logs for more details and try again."
             ) from e
 

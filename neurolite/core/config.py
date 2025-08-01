@@ -66,6 +66,35 @@ class DataConfig:
 
 
 @dataclass
+class PerformanceConfig:
+    """Performance optimization configuration."""
+    # Caching settings
+    enable_caching: bool = True
+    memory_cache_size: int = 512 * 1024 * 1024  # 512MB
+    disk_cache_size: int = 2 * 1024 * 1024 * 1024  # 2GB
+    cache_ttl: Optional[int] = None  # No expiration by default
+    
+    # Parallel processing settings
+    max_workers: Optional[int] = None  # Auto-detect
+    use_processes: bool = False  # Use threads by default
+    chunk_size: Optional[int] = None  # Auto-calculate
+    
+    # GPU settings
+    auto_gpu: bool = True
+    gpu_memory_fraction: float = 0.8
+    allow_growth: bool = True
+    
+    # Lazy loading settings
+    lazy_load_models: bool = True
+    lazy_load_datasets: bool = True
+    
+    # Benchmarking settings
+    benchmark_warmup_runs: int = 1
+    benchmark_measurement_runs: int = 3
+    benchmark_results_dir: Optional[str] = None
+
+
+@dataclass
 class DeploymentConfig:
     """Deployment configuration settings."""
     host: str = "0.0.0.0"
@@ -83,6 +112,7 @@ class NeuroLiteConfig:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     data: DataConfig = field(default_factory=DataConfig)
+    performance: PerformanceConfig = field(default_factory=PerformanceConfig)
     deployment: DeploymentConfig = field(default_factory=DeploymentConfig)
     
     # Additional settings
@@ -163,6 +193,13 @@ class ConfigManager:
             'NEUROLITE_DEVICE': ('model.device', str),
             'NEUROLITE_CACHE_DIR': ('model.cache_dir', str),
             'NEUROLITE_NUM_WORKERS': ('data.num_workers', int),
+            'NEUROLITE_ENABLE_CACHING': ('performance.enable_caching', lambda x: x.lower() == 'true'),
+            'NEUROLITE_MEMORY_CACHE_SIZE': ('performance.memory_cache_size', int),
+            'NEUROLITE_DISK_CACHE_SIZE': ('performance.disk_cache_size', int),
+            'NEUROLITE_MAX_WORKERS': ('performance.max_workers', int),
+            'NEUROLITE_USE_PROCESSES': ('performance.use_processes', lambda x: x.lower() == 'true'),
+            'NEUROLITE_AUTO_GPU': ('performance.auto_gpu', lambda x: x.lower() == 'true'),
+            'NEUROLITE_LAZY_LOAD_MODELS': ('performance.lazy_load_models', lambda x: x.lower() == 'true'),
         }
         
         for env_var, (attr_path, converter) in env_mapping.items():
