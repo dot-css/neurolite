@@ -54,15 +54,15 @@ class TabularWorkflow(BaseWorkflow):
     def default_models(self) -> Dict[TaskType, str]:
         """Default model mappings for tabular tasks."""
         return {
-            TaskType.CLASSIFICATION: "random_forest_classifier",
-            TaskType.BINARY_CLASSIFICATION: "random_forest_classifier",
-            TaskType.MULTICLASS_CLASSIFICATION: "random_forest_classifier",
-            TaskType.MULTILABEL_CLASSIFICATION: "random_forest_classifier",
+            TaskType.CLASSIFICATION: "random_forest",
+            TaskType.BINARY_CLASSIFICATION: "random_forest",
+            TaskType.MULTICLASS_CLASSIFICATION: "random_forest",
+            TaskType.MULTILABEL_CLASSIFICATION: "random_forest",
             TaskType.REGRESSION: "random_forest_regressor",
             TaskType.LINEAR_REGRESSION: "linear_regression",
-            TaskType.POLYNOMIAL_REGRESSION: "polynomial_regression",
-            TaskType.CLUSTERING: "kmeans",
-            TaskType.TIME_SERIES_FORECASTING: "lstm_forecaster"
+            TaskType.POLYNOMIAL_REGRESSION: "gradient_boosting_regressor",  # fallback to available model
+            TaskType.CLUSTERING: "random_forest",  # fallback to available model
+            TaskType.TIME_SERIES_FORECASTING: "random_forest"  # fallback to available model
         }
     
     def _load_and_validate_data(self) -> Tuple[Dataset, DataType]:
@@ -79,8 +79,9 @@ class TabularWorkflow(BaseWorkflow):
             )
         
         # Load data
-        dataset = load_data(self.config.data_path, data_type, target=self.config.target)
-        self.logger.info(f"Loaded {len(dataset)} tabular samples with {dataset.info.num_features} features")
+        dataset = load_data(self.config.data_path, data_type, target_column=self.config.target)
+        num_features = dataset.info.shape[1] if dataset.info.shape and len(dataset.info.shape) > 1 else len(dataset.info.feature_names) if dataset.info.feature_names else "unknown"
+        self.logger.info(f"Loaded {len(dataset)} tabular samples with {num_features} features")
         
         # Validate data quality
         validation_result = validate_data(dataset)
@@ -135,7 +136,7 @@ class TabularWorkflow(BaseWorkflow):
         preprocessing_config = self._get_tabular_preprocessing_config(task_type)
         
         # Apply preprocessing with feature engineering
-        processed_dataset = preprocess_data(dataset, task_type, config=preprocessing_config)
+        processed_dataset = preprocess_data(dataset, config=preprocessing_config)
         
         # Split data (no stratification for clustering)
         stratify = task_type not in [TaskType.CLUSTERING, TaskType.TIME_SERIES_FORECASTING]
@@ -143,7 +144,7 @@ class TabularWorkflow(BaseWorkflow):
         data_splits = split_data(
             processed_dataset,
             train_ratio=1.0 - self.config.validation_split - self.config.test_split,
-            val_ratio=self.config.validation_split,
+            validation_ratio=self.config.validation_split,
             test_ratio=self.config.test_split,
             stratify=stratify
         )
@@ -231,7 +232,6 @@ class TabularWorkflow(BaseWorkflow):
         
         # Tabular-specific model parameters
         model_params = {
-            'n_features': getattr(dataset.info, 'num_features', 10),
             **self.config.kwargs
         }
         
@@ -241,7 +241,6 @@ class TabularWorkflow(BaseWorkflow):
             TaskType.MULTICLASS_CLASSIFICATION, TaskType.MULTILABEL_CLASSIFICATION
         ]:
             model_params.update({
-                'n_classes': getattr(dataset.info, 'num_classes', 2),
                 'class_weight': 'balanced' if self.config.domain_config.get('balance_classes', False) else None,
                 'random_state': 42
             })
@@ -293,19 +292,29 @@ class TabularWorkflow(BaseWorkflow):
         
         # Create training engine and train
         training_engine = TrainingEngine()
+        
+        # Extract training and validation data
+        X_train = dataset.train.data
+        y_train = dataset.train.targets
+        X_val = dataset.validation.data if dataset.validation else None
+        y_val = dataset.validation.targets if dataset.validation else None
+        
         trained_model = training_engine.train(
             model=model,
-            train_data=dataset.train,
-            val_data=dataset.validation,
-            config=training_config
+            X_train=X_train,
+            y_train=y_train,
+            X_val=X_val,
+            y_val=y_val,
+            task_type=task_type,
+            data_type=DataType.TABULAR
         )
         
         training_info = {
             'config': training_config,
-            'epochs_completed': len(trained_model.training_history.get('loss', [])),
-            'best_validation_metric': max(trained_model.training_history.get('val_accuracy', [0])),
-            'training_time': trained_model.metadata.training_time if trained_model.metadata else 0.0,
-            'feature_importance': getattr(trained_model.model, 'feature_importances_', None)
+            'epochs_completed': getattr(trained_model, 'epochs_completed', 1),
+            'best_validation_metric': getattr(trained_model, 'best_validation_metric', 0.0),
+            'training_time': getattr(trained_model, 'training_time', 0.0),
+            'feature_importance': getattr(trained_model.model, 'feature_importances_', None) if hasattr(trained_model, 'model') else None
         }
         
         return trained_model, training_info

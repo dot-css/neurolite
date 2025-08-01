@@ -278,6 +278,16 @@ class DataSplitter:
             logger.debug(f"Split class distribution: {dict(target_counts)}")
         
         # Create new dataset info
+        # Handle file_paths properly - for tabular data, all samples come from the same file
+        split_file_paths = None
+        if original_dataset.info.file_paths:
+            if len(original_dataset.info.file_paths) == 1:
+                # Single file (e.g., CSV) - all splits reference the same file
+                split_file_paths = original_dataset.info.file_paths
+            else:
+                # Multiple files - map indices to corresponding files
+                split_file_paths = [original_dataset.info.file_paths[i] for i in indices]
+        
         new_info = DatasetInfo(
             data_type=original_dataset.info.data_type,
             num_samples=len(split_data),
@@ -286,7 +296,7 @@ class DataSplitter:
             class_names=class_names,
             feature_names=original_dataset.info.feature_names,
             target_column=original_dataset.info.target_column,
-            file_paths=[original_dataset.info.file_paths[i] for i in indices] if original_dataset.info.file_paths else None,
+            file_paths=split_file_paths,
             metadata={**(original_dataset.info.metadata or {}), 'split': True}
         )
         
