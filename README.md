@@ -298,11 +298,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [https://neurolite.readthedocs.io](https://neurolite.readthedocs.io)
 - **Issues**: [GitHub Issues](https://github.com/dot-css/neurolite/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/dot-css/neurolite/discussions)
-- **Email**: team@neurolite.ai
+- **Email**: saqibshaikhdz@gmail.com
 
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=dot-css/neurolite&type=Date)](https://star-history.com/#dot-css/neurolite&Date)
 
 ---
 
