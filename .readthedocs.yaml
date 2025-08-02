@@ -33,7 +33,6 @@ python:
       extra_requirements:
         - docs
         - all
-  system_packages: true
 
 # Set the version of Python and other tools you might need
 submodules:
