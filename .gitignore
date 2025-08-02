@@ -211,3 +211,6 @@ Thumbs.db
 *.bak
 *.backup
 *~
+
+.pypirc
+.pypirc.template
