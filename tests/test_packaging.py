@@ -19,7 +19,7 @@ class TestVersionManagement:
     
     def test_version_format(self):
         """Test that version follows semantic versioning."""
-        version_pattern = r'^\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)?$'
+        version_pattern = r'^\d+\.\d+\.\d+(?:-[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)?(?:\+[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)?$'
         assert re.match(version_pattern, __version__), f"Invalid version format: {__version__}"
     
     def test_version_consistency(self):
@@ -99,6 +99,32 @@ class TestPackageConfiguration:
         
         for file_path in required_files:
             assert Path(file_path).exists(), f"Required file not found: {file_path}"
+    
+    def test_dependency_consistency(self):
+        """Test that dependencies are consistent between setup.py and pyproject.toml."""
+        # Read pyproject.toml
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib
+            except ImportError:
+                pytest.skip("No TOML parser available")
+        
+        with open("pyproject.toml", "rb") as f:
+            pyproject_config = tomllib.load(f)
+        
+        pyproject_deps = set(pyproject_config["project"]["dependencies"])
+        
+        # Read setup.py dependencies (basic check)
+        with open("setup.py", "r") as f:
+            setup_content = f.read()
+        
+        # Check that major dependencies are present in both
+        major_deps = ["numpy", "pandas", "scikit-learn", "torch"]
+        for dep in major_deps:
+            assert any(dep in d for d in pyproject_deps), f"{dep} not found in pyproject.toml"
+            assert dep in setup_content, f"{dep} not found in setup.py"
 
 
 class TestBuildSystem:
@@ -149,6 +175,35 @@ class TestBuildSystem:
             
             if check_result.returncode != 0:
                 pytest.fail(f"Package check failed: {check_result.stderr}")
+    
+    def test_wheel_contents(self):
+        """Test that wheel contains expected files."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Build package
+            build_result = subprocess.run(
+                [sys.executable, "-m", "build", "--wheel", "--outdir", temp_dir],
+                capture_output=True,
+                text=True
+            )
+            
+            if build_result.returncode != 0:
+                pytest.skip(f"Build failed: {build_result.stderr}")
+            
+            # Find the wheel file
+            wheel_files = list(Path(temp_dir).glob("*.whl"))
+            assert len(wheel_files) == 1, "Expected exactly one wheel file"
+            
+            wheel_file = wheel_files[0]
+            
+            # Check wheel contents using zipfile
+            import zipfile
+            with zipfile.ZipFile(wheel_file, 'r') as zf:
+                contents = zf.namelist()
+                
+                # Check that main package is included
+                assert any("neurolite/" in f for f in contents), "neurolite package not found in wheel"
+                assert any("neurolite/__init__.py" in f for f in contents), "__init__.py not found in wheel"
+                assert any("neurolite/_version.py" in f for f in contents), "_version.py not found in wheel"
 
 
 class TestDependencies:
@@ -200,6 +255,33 @@ class TestDependencies:
         dev_deps = optional_deps.get("dev", [])
         assert any("pytest" in dep for dep in dev_deps), "pytest not in dev dependencies"
         assert any("black" in dep for dep in dev_deps), "black not in dev dependencies"
+        
+        # Check that optional groups exist
+        expected_groups = ["dev", "tensorflow", "xgboost", "docs", "all"]
+        for group in expected_groups:
+            assert group in optional_deps, f"Optional dependency group '{group}' not found"
+    
+    def test_dependency_versions(self):
+        """Test that dependency versions are reasonable."""
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib
+            except ImportError:
+                pytest.skip("No TOML parser available")
+        
+        with open("pyproject.toml", "rb") as f:
+            config = tomllib.load(f)
+        
+        dependencies = config["project"]["dependencies"]
+        
+        # Check that versions are not too restrictive
+        for dep in dependencies:
+            if ">=" in dep:
+                name, version = dep.split(">=")
+                # Basic check that version looks reasonable
+                assert re.match(r'\d+\.\d+', version), f"Invalid version format in {dep}"
 
 
 class TestReleaseAutomation:
@@ -213,6 +295,21 @@ class TestReleaseAutomation:
         # Check if script is executable (on Unix systems)
         if os.name != 'nt':  # Not Windows
             assert os.access(release_script, os.X_OK), "Release script not executable"
+    
+    def test_release_script_syntax(self):
+        """Test that release script has valid Python syntax."""
+        release_script = Path("scripts/release.py")
+        if not release_script.exists():
+            pytest.skip("Release script not found")
+        
+        # Try to compile the script
+        with open(release_script, "r") as f:
+            content = f.read()
+        
+        try:
+            compile(content, str(release_script), "exec")
+        except SyntaxError as e:
+            pytest.fail(f"Release script has syntax error: {e}")
     
     def test_makefile_exists(self):
         """Test that Makefile exists with required targets."""
@@ -262,3 +359,62 @@ class TestInstallation:
         
         assert import_result.returncode == 0, f"Import failed: {import_result.stderr}"
         assert __version__ in import_result.stdout, "Version mismatch after install"
+    
+    def test_console_script_entry_point(self):
+        """Test that console script entry point is properly configured."""
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib
+            except ImportError:
+                pytest.skip("No TOML parser available")
+        
+        with open("pyproject.toml", "rb") as f:
+            config = tomllib.load(f)
+        
+        scripts = config["project"]["scripts"]
+        assert "neurolite" in scripts, "neurolite console script not configured"
+        assert scripts["neurolite"] == "neurolite.cli.main:main", "Incorrect entry point for neurolite script"
+
+
+class TestPackageMetadata:
+    """Test package metadata and configuration."""
+    
+    def test_readme_exists(self):
+        """Test that README.md exists and is not empty."""
+        readme_file = Path("README.md")
+        assert readme_file.exists(), "README.md not found"
+        
+        with open(readme_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        assert len(content.strip()) > 0, "README.md is empty"
+        assert "neurolite" in content.lower(), "README.md doesn't mention neurolite"
+    
+    def test_license_exists(self):
+        """Test that LICENSE file exists."""
+        license_file = Path("LICENSE")
+        assert license_file.exists(), "LICENSE file not found"
+        
+        with open(license_file, "r") as f:
+            content = f.read()
+        
+        assert len(content.strip()) > 0, "LICENSE file is empty"
+    
+    def test_changelog_exists(self):
+        """Test that CHANGELOG.md exists."""
+        changelog_file = Path("CHANGELOG.md")
+        assert changelog_file.exists(), "CHANGELOG.md not found"
+    
+    def test_manifest_includes_required_files(self):
+        """Test that MANIFEST.in includes all required files."""
+        manifest_file = Path("MANIFEST.in")
+        assert manifest_file.exists(), "MANIFEST.in not found"
+        
+        with open(manifest_file, "r") as f:
+            content = f.read()
+        
+        required_includes = ["README.md", "LICENSE", "CHANGELOG.md"]
+        for required in required_includes:
+            assert required in content, f"MANIFEST.in doesn't include {required}"

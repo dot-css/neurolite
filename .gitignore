@@ -2,14 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.github/
-.kiro/
 
 
 # C extensions
 *.so
 
 # Distribution / packaging
+.github/
+.kiro/
 .Python
 build/
 develop-eggs/
