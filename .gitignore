@@ -8,6 +8,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+
 .github/
 .kiro/
 .Python
@@ -44,6 +45,7 @@ htmlcov/
 .tox/
 .nox/
 .gitignore
+.pypirc.template
 iris.csv
 test.py
 .coverage
