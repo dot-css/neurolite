@@ -1,0 +1,194 @@
+/* Custom CSS for NeuroLite Documentation */
+
+/* Brand colors */
+:root {
+    --neurolite-primary: #2980B9;
+    --neurolite-secondary: #3498DB;
+    --neurolite-accent: #E74C3C;
+    --neurolite-success: #27AE60;
+    --neurolite-warning: #F39C12;
+    --neurolite-dark: #2C3E50;
+    --neurolite-light: #ECF0F1;
+}
+
+/* Custom header styling */
+.wy-nav-top {
+    background: linear-gradient(135deg, var(--neurolite-primary), var(--neurolite-secondary));
+}
+
+/* Sidebar styling */
+.wy-nav-side {
+    background: var(--neurolite-dark);
+}
+
+.wy-menu-vertical a {
+    color: var(--neurolite-light);
+}
+
+.wy-menu-vertical a:hover {
+    background-color: var(--neurolite-primary);
+    color: white;
+}
+
+/* Code blocks */
+.highlight {
+    border-left: 4px solid var(--neurolite-primary);
+    padding-left: 1rem;
+}
+
+/* Admonitions */
+.admonition.note {
+    border-left: 4px solid var(--neurolite-primary);
+}
+
+.admonition.warning {
+    border-left: 4px solid var(--neurolite-warning);
+}
+
+.admonition.tip {
+    border-left: 4px solid var(--neurolite-success);
+}
+
+.admonition.important {
+    border-left: 4px solid var(--neurolite-accent);
+}
+
+/* Tables */
+.wy-table-responsive table td, .wy-table-responsive table th {
+    white-space: normal;
+}
+
+/* Custom buttons */
+.btn-neurolite {
+    background: linear-gradient(135deg, var(--neurolite-primary), var(--neurolite-secondary));
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+    margin: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-neurolite:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    color: white;
+    text-decoration: none;
+}
+
+/* Feature cards */
+.feature-card {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.feature-card h3 {
+    color: var(--neurolite-primary);
+    margin-top: 0;
+}
+
+/* Code examples styling */
+.code-example {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.code-example h4 {
+    color: var(--neurolite-primary);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+/* Performance metrics table */
+.performance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.performance-table th,
+.performance-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.performance-table th {
+    background-color: var(--neurolite-primary);
+    color: white;
+}
+
+.performance-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+/* Quick start section */
+.quick-start {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.quick-start h2 {
+    color: white;
+    margin-top: 0;
+}
+
+/* Installation section */
+.installation-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+/* Navigation improvements */
+.wy-nav-content {
+    max-width: none;
+}
+
+@media screen and (min-width: 1400px) {
+    .wy-nav-content {
+        margin-left: 300px;
+    }
+    
+    .wy-nav-side {
+        width: 300px;
+    }
+}
+
+/* Logo styling */
+.logo {
+    max-height: 40px;
+    margin-right: 10px;
+}
+
+/* Responsive design */
+@media screen and (max-width: 768px) {
+    .feature-card {
+        margin: 10px 0;
+        padding: 15px;
+    }
+    
+    .quick-start {
+        padding: 20px;
+    }
+}

@@ -1,8 +1,15 @@
-# NeuroLite Documentation
+# NeuroLite Documentation 🧠⚡
 
-Welcome to the comprehensive documentation for NeuroLite - the AI/ML/DL/NLP productivity library that enables you to build, train, and deploy machine learning models with minimal code.
+```{raw} html
+<div class="quick-start">
+<h2>🚀 Welcome to NeuroLite</h2>
+<p>The revolutionary AI/ML/DL/NLP productivity library that enables you to build, train, and deploy machine learning models with <strong>minimal code</strong>.</p>
+</div>
+```
 
-## 🚀 Quick Start
+## ⚡ Quick Start
+
+Transform complex ML workflows into simple operations:
 
 ```python
 import neurolite
@@ -12,6 +19,15 @@ model = neurolite.train('your_data.csv', task='classification')
 
 # Deploy it instantly
 neurolite.deploy(model, format='api', port=8080)
+```
+
+```{raw} html
+<div class="installation-section">
+<h3>📦 Installation</h3>
+<pre><code>pip install neurolite</code></pre>
+<p>Or for the latest development version:</p>
+<pre><code>pip install git+https://github.com/dot-css/neurolite.git</code></pre>
+</div>
 ```
 
 ## 📚 Documentation Sections

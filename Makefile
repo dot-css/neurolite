@@ -12,10 +12,15 @@ help:
 	@echo "  quality      - Run all quality checks"
 	@echo "  build        - Build package"
 	@echo "  check        - Check built package"
+	@echo "  validate     - Run comprehensive package validation"
 	@echo "  upload-test  - Upload to Test PyPI"
 	@echo "  upload       - Upload to PyPI"
 	@echo "  release-test - Full release to Test PyPI"
 	@echo "  release      - Full release to PyPI"
+	@echo "  release-dry  - Dry run release (no upload)"
+	@echo "  release-enhanced - Enhanced release with verbose output"
+	@echo "  release-version - Release with version bump (use VERSION=x.y.z)"
+	@echo "  release-quick - Quick release for development (Test PyPI only)"
 	@echo "  install-test - Install from Test PyPI"
 	@echo "  version      - Show current version"
 	@echo "  docs         - Build documentation"
@@ -56,6 +61,10 @@ build: clean
 check: build
 	python -m twine check dist/*
 
+# Run comprehensive package validation
+validate: build
+	python scripts/validate_package.py
+
 # Upload to Test PyPI
 upload-test: check
 	python -m twine upload --repository testpypi dist/*
@@ -75,6 +84,20 @@ release:
 # Dry run release
 release-dry:
 	python scripts/release.py --dry-run
+
+# Enhanced release with comprehensive validation
+release-enhanced:
+	python scripts/release.py --verbose
+
+# Release with version bump
+release-version:
+	@echo "Usage: make release-version VERSION=x.y.z"
+	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION not specified"; exit 1; fi
+	python scripts/release.py --version $(VERSION) --verbose
+
+# Quick release (skip some checks for development)
+release-quick:
+	python scripts/release.py --skip-quality --skip-git-checks --test-only
 
 # Install from Test PyPI
 install-test:
